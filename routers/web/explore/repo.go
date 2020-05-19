@@ -12,6 +12,7 @@ import (
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/context"
 	"code.gitea.io/gitea/modules/setting"
+	"code.gitea.io/gitea/modules/util"
 )
 
 const (
@@ -26,6 +27,8 @@ type RepoSearchOptions struct {
 	Restricted bool
 	PageSize   int
 	TplName    base.TplName
+	// codeberg: Hide mirrors from explore view
+	HideMirror util.OptionalBool
 }
 
 // RenderRepoSearch render repositories search page
@@ -77,6 +80,12 @@ func RenderRepoSearch(ctx *context.Context, opts *RepoSearchOptions) {
 	topicOnly := ctx.QueryBool("topic")
 	ctx.Data["TopicOnly"] = topicOnly
 
+	// codeberg: Hide mirrors from explore view
+	var showMirror util.OptionalBool = util.OptionalBoolNone
+	if (opts.HideMirror == util.OptionalBoolTrue) && (keyword == "") {
+		showMirror = util.OptionalBoolFalse
+	}
+
 	repos, count, err = models.SearchRepository(&models.SearchRepoOptions{
 		ListOptions: models.ListOptions{
 			Page:     page,
@@ -91,6 +100,8 @@ func RenderRepoSearch(ctx *context.Context, opts *RepoSearchOptions) {
 		AllLimited:         true,
 		TopicOnly:          topicOnly,
 		IncludeDescription: setting.UI.SearchRepoDescription,
+		// codeberg: Hide mirrors from explore view
+		Mirror: showMirror,
 	})
 	if err != nil {
 		ctx.ServerError("SearchRepository", err)
@@ -127,5 +138,7 @@ func Repos(ctx *context.Context) {
 		OwnerID:  ownerID,
 		Private:  ctx.User != nil,
 		TplName:  tplExploreRepos,
+		// codeberg: Hide mirrors from explore view
+		HideMirror: util.OptionalBoolTrue,
 	})
 }
