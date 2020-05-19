@@ -577,6 +577,14 @@ func (c *Comment) CodeCommentURL() string {
 }
 
 func createComment(e *xorm.Session, opts *CreateCommentOptions) (_ *Comment, err error) {
+	if opts.Type == CommentTypeComment {
+		var id int64
+		has, _ := e.Table("comment").Where("poster_id = ?", opts.Doer.ID).And("unix_timestamp()-created_unix<10").And("type=0").Limit(1).Get(&id)
+		if has == true {
+			return nil, fmt.Errorf("NewComment: Unknown error")
+		}
+	}
+
 	var LabelID int64
 	if opts.Label != nil {
 		LabelID = opts.Label.ID
