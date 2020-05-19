@@ -882,6 +882,12 @@ type NewIssueOptions struct {
 }
 
 func newIssue(e *xorm.Session, doer *User, opts NewIssueOptions) (err error) {
+	var id int64
+	has, err := e.Table("issue").Where("poster_id = ?", doer.ID).And("unix_timestamp()-created_unix<30").Limit(1).Get(&id)
+	if has == true {
+		return  fmt.Errorf("NewIssue: Unknown error")
+	}
+
 	opts.Issue.Title = strings.TrimSpace(opts.Issue.Title)
 
 	if opts.Issue.MilestoneID > 0 {
