@@ -2,52 +2,40 @@
 <div class="home">
 	<div class="ui stackable middle very relaxed page grid">
 		<div class="sixteen wide center aligned centered column">
-			<div>
-				<img class="logo" src="{{StaticUrlPrefix}}/img/gitea-lg.png" />
-			</div>
-			<div class="hero">
-				<h1 class="ui icon header title">
-					{{AppName}}
+			<img width="75%" src="{{AppSubUrl}}/img/logo.svg"/><br>
+			<a href="/user/sing_up"><button class="ui button huge blue">{{.i18n.Tr "auth.sign_up_now" | Str2html}}</button></a>
+		</div>
+	</div>
+	{{if eq .Lang "undefined"}}
+		<div class="ui stackable middle very relaxed page grid">
+		</div>
+	{{else}}
+		<div class="ui stackable middle very relaxed page grid">
+			<div class="eight wide center column">
+				<h1 class="header">
+					Give your free project a free home.
 				</h1>
-				<h2>{{.i18n.Tr "startpage.app_desc"}}</h2>
+				<p class="large">
+					Collaboration platform and git hosting for free and open source software, content, projects.
+					<a href="https://blog.codeberg.org/codebergorg-launched.html">⇢Our mission statement.</a>
+				</p>
+				<p class="large">
+					Independent and powered by your donations and contributions.
+
+				</p>
+			</div>
+			<div class="eight wide center column">
+				<h1 class="header">
+					No tracking. Your data is not for sale.
+				</h1>
+				<p class="large">
+					All services run on servers under our control. No dependencies on external services. No third party cookies, no tracking.
+				</p>
+				<p class="large">
+					Hosted in the EU, we welcome the world.
+				</p>
 			</div>
 		</div>
-	</div>
-	<div class="ui stackable middle very relaxed page grid">
-		<div class="eight wide center column">
-			<h1 class="hero ui icon header">
-				{{svg "octicon-flame"}} {{.i18n.Tr "startpage.install"}}
-			</h1>
-			<p class="large">
-				{{.i18n.Tr "startpage.install_desc" | Str2html}}
-			</p>
-		</div>
-		<div class="eight wide center column">
-			<h1 class="hero ui icon header">
-				{{svg "octicon-device-desktop"}} {{.i18n.Tr "startpage.platform"}}
-			</h1>
-			<p class="large">
-				{{.i18n.Tr "startpage.platform_desc" | Str2html}}
-			</p>
-		</div>
-	</div>
-	<div class="ui stackable middle very relaxed page grid">
-		<div class="eight wide center column">
-			<h1 class="hero ui icon header">
-				{{svg "octicon-rocket"}} {{.i18n.Tr "startpage.lightweight"}}
-			</h1>
-			<p class="large">
-				{{.i18n.Tr "startpage.lightweight_desc" | Str2html}}
-			</p>
-		</div>
-		<div class="eight wide center column">
-			<h1 class="hero ui icon header">
-				{{svg "octicon-code"}} {{.i18n.Tr "startpage.license"}}
-			</h1>
-			<p class="large">
-				{{.i18n.Tr "startpage.license_desc" | Str2html}}
-			</p>
-		</div>
-	</div>
+	{{end}}
 </div>
 {{template "base/footer" .}}
