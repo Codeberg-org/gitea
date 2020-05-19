@@ -74,6 +74,7 @@ func Home(ctx *context.Context) {
 // RepoSearchOptions when calling search repositories
 type RepoSearchOptions struct {
 	OwnerID    int64
+	HideMirror util.OptionalBool
 	Private    bool
 	Restricted bool
 	PageSize   int
@@ -137,6 +138,12 @@ func RenderRepoSearch(ctx *context.Context, opts *RepoSearchOptions) {
 	topicOnly := ctx.QueryBool("topic")
 	ctx.Data["TopicOnly"] = topicOnly
 
+	var show_mirror util.OptionalBool = util.OptionalBoolNone;
+
+	if ((opts.HideMirror == util.OptionalBoolTrue) && (keyword == "")) {
+	   show_mirror = util.OptionalBoolFalse;
+	}
+
 	repos, count, err = models.SearchRepository(&models.SearchRepoOptions{
 		ListOptions: models.ListOptions{
 			Page:     page,
@@ -145,6 +152,7 @@ func RenderRepoSearch(ctx *context.Context, opts *RepoSearchOptions) {
 		Actor:              ctx.User,
 		OrderBy:            orderBy,
 		Private:            opts.Private,
+		Mirror:             show_mirror,
 		Keyword:            keyword,
 		OwnerID:            opts.OwnerID,
 		AllPublic:          true,
@@ -183,6 +191,7 @@ func ExploreRepos(ctx *context.Context) {
 	}
 
 	RenderRepoSearch(ctx, &RepoSearchOptions{
+		HideMirror: util.OptionalBoolTrue,
 		PageSize: setting.UI.ExplorePagingNum,
 		OwnerID:  ownerID,
 		Private:  ctx.User != nil,
