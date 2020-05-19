@@ -37,7 +37,7 @@ const (
 	tplSignIn base.TplName = "user/auth/signin"
 	// tplSignUp template path for sign up page
 	tplSignUp base.TplName = "user/auth/signup"
-	// TplActivate template path for activate user
+	// Tpl template path for activate user
 	TplActivate       base.TplName = "user/auth/activate"
 	tplForgotPassword base.TplName = "user/auth/forgot_passwd"
 	tplResetPassword  base.TplName = "user/auth/reset_passwd"
@@ -1155,6 +1155,8 @@ func SignUpPost(ctx *context.Context, cpt *captcha.Captcha, form auth.RegisterFo
 // Activate render activate user page
 func Activate(ctx *context.Context) {
 	code := ctx.Query("code")
+	password := ctx.Query("password")
+
 	if len(code) == 0 {
 		ctx.Data["IsActivatePage"] = true
 		if ctx.User.IsActive {
@@ -1180,8 +1182,15 @@ func Activate(ctx *context.Context) {
 		return
 	}
 
-	// Verify code.
-	if user := models.VerifyUserActiveCode(code); user != nil {
+	if len(password) == 0 {
+		ctx.Data["Code"] = code
+		ctx.Data["NeedsPassword"] = true
+		ctx.HTML(200, TplActivate)
+		return
+	}
+
+	// Verify code and password
+	if user := models.VerifyUserActiveCodeAndPassword(code, password); user != nil {
 		user.IsActive = true
 		var err error
 		if user.Rands, err = models.GetUserSalt(); err != nil {
