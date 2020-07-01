@@ -78,16 +78,15 @@
 							{{end}}
 						</div>
 					</div>
+					{{if not .DisableMirrors}}
 					<div class="inline field">
 						<label>{{.i18n.Tr "repo.migrate_type"}}</label>
 						<div class="ui checkbox">
-							{{if .DisableMirrors}}
-							{{else}}
-								<input id="mirror" name="mirror" type="checkbox" {{if .mirror}}checked{{end}}>
-								<label>{{.i18n.Tr "repo.migrate_type_helper" | Safe}}</label>
-							{{end}}
+							<input id="mirror" name="mirror" type="checkbox" {{if .mirror}}checked{{end}}>
+							<label>{{.i18n.Tr "repo.migrate_type_helper" | Safe}}</label>
 						</div>
 					</div>
+					{{end}}
 					<div id="migrate_items" class="ui field">
 						<div class="inline field">
 							<label>{{.i18n.Tr "repo.migrate_items"}}</label>
