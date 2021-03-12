@@ -11,6 +11,13 @@
 				<a href="{{AppSubUrl}}/{{.Owner.Name}}">{{.Owner.Name}}</a>
 				<div class="divider"> / </div>
 				<a href="{{$.RepoLink}}">{{.Name}}</a>
+				{{if and (eq .LowerName "pages") (not .IsPrivate)}}
+					<span class="ui basic label">
+						<a href="https://{{.Owner.Name}}.codeberg.page" target="_blank">
+							Visit Page {{svg "octicon-link-external" 16}}
+						</a>
+					</span>
+				{{end}}
 				{{if .IsTemplate}}
 					{{if .IsPrivate}}
 						<span class="ui basic label">{{$.i18n.Tr "repo.desc.private_template"}}</span>
