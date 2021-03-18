@@ -14,6 +14,13 @@
 					<div class="mx-2">/</div>
 					<a href="{{$.RepoLink}}">{{.Name}}</a>
 					<div class="labels df ac fw">
+						{{if eq .LowerName "pages"}}
+							<span class="ui basic label">
+								<a href="https://{{.Owner.Name}}.codeberg.page" target="_blank">
+									Visit Page {{svg "octicon-link-external" 16}}
+								</a>
+							</span>
+						{{end}}
 						{{if .IsTemplate}}
 							{{if .IsPrivate}}
 								<span class="ui basic label">{{$.i18n.Tr "repo.desc.private_template"}}</span>
