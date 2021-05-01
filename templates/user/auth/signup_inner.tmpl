@@ -23,7 +23,9 @@
 					<label for="email">{{.i18n.Tr "email"}}</label>
 					<input id="email" name="email" type="email" value="{{.email}}" required>
 				</div>
-
+				
+				<div class="ui message flash-info"><p>Please note that we block certain throwaway email providers since we want to make sure we reach you.</p></div>
+				
 				{{if not .DisablePassword}}
 					<div class="required inline field {{if and (.Err_Password) (or (not .LinkAccountMode) (and .LinkAccountMode .LinkAccountModeRegister))}}error{{end}}">
 						<label for="password">{{.i18n.Tr "password"}}</label>
@@ -43,6 +45,7 @@
 						<label for="captcha">{{.i18n.Tr "captcha"}}</label>
 						<input id="captcha" name="captcha" value="{{.captcha}}" autocomplete="off">
 					</div>
+					<div class="ui message flash-info"><p>If you have justified difficulties solving the captcha, please contact us at <a href="mailto:contact@codeberg.org">contact@codeberg.org</a> and let us know your prefered account name.</p></div>
 				{{end}}
 				{{if and .EnableCaptcha (eq .CaptchaType "recaptcha")}}
 					<div class="inline field required">
