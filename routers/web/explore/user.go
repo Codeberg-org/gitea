@@ -48,10 +48,12 @@ func RenderUserSearch(ctx *context.Context, opts *models.SearchUserOptions, tplN
 	switch ctx.Query("sort") {
 	case "newest":
 		orderBy = models.SearchOrderByIDReverse
+		opts.HideNoRepos = util.OptionalBoolFalse
 	case "oldest":
 		orderBy = models.SearchOrderByID
 	case "recentupdate":
 		orderBy = models.SearchOrderByRecentUpdated
+		opts.HideNoRepos = util.OptionalBoolFalse
 	case "leastupdate":
 		orderBy = models.SearchOrderByLeastUpdated
 	case "reversealphabetically":
@@ -59,8 +61,9 @@ func RenderUserSearch(ctx *context.Context, opts *models.SearchUserOptions, tplN
 	case "alphabetically":
 		orderBy = models.SearchOrderByAlphabetically
 	default:
-		ctx.Data["SortType"] = "alphabetically"
-		orderBy = models.SearchOrderByAlphabetically
+		ctx.Data["SortType"] = "recentupdate"
+		orderBy = models.SearchOrderByRecentUpdated
+		opts.HideNoRepos = util.OptionalBoolFalse
 	}
 
 	opts.Keyword = strings.Trim(ctx.Query("q"), " ")
@@ -103,5 +106,6 @@ func Users(ctx *context.Context) {
 		ListOptions: models.ListOptions{PageSize: setting.UI.ExplorePagingNum},
 		IsActive:    util.OptionalBoolTrue,
 		Visible:     []structs.VisibleType{structs.VisibleTypePublic, structs.VisibleTypeLimited, structs.VisibleTypePrivate},
+		HideNoRepos: util.OptionalBoolTrue,
 	}, tplExploreUsers)
 }
