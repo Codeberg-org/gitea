@@ -1590,6 +1590,7 @@ type SearchUserOptions struct {
 	Actor         *User // The user doing the search
 	IsActive      util.OptionalBool
 	SearchByEmail bool // Search by email as well as username/full name
+	HideNoRepos   util.OptionalBool
 }
 
 func (opts *SearchUserOptions) toConds() builder.Cond {
@@ -1641,6 +1642,10 @@ func (opts *SearchUserOptions) toConds() builder.Cond {
 
 	if !opts.IsActive.IsNone() {
 		cond = cond.And(builder.Eq{"is_active": opts.IsActive.IsTrue()})
+	}
+
+	if opts.HideNoRepos.IsTrue() {
+		cond = cond.And(builder.Expr("num_repos > 0"));
 	}
 
 	return cond

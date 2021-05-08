@@ -233,6 +233,12 @@ func RenderUserSearch(ctx *context.Context, opts *models.SearchUserOptions, tplN
 	}
 
 	opts.Keyword = strings.Trim(ctx.Query("q"), " ")
+
+
+	if (opts.HideNoRepos == util.OptionalBoolTrue) && (opts.Keyword != "") {
+		opts.HideNoRepos = util.OptionalBoolFalse;
+        }
+
 	opts.OrderBy = orderBy
 	if len(opts.Keyword) == 0 || isKeywordValid(opts.Keyword) {
 		users, count, err = models.SearchUsers(opts)
@@ -272,6 +278,7 @@ func ExploreUsers(ctx *context.Context) {
 		ListOptions: models.ListOptions{PageSize: setting.UI.ExplorePagingNum},
 		IsActive:    util.OptionalBoolTrue,
 		Visible:     []structs.VisibleType{structs.VisibleTypePublic, structs.VisibleTypeLimited, structs.VisibleTypePrivate},
+		HideNoRepos: util.OptionalBoolTrue,
 	}, tplExploreUsers)
 }
 
@@ -293,6 +300,7 @@ func ExploreOrganizations(ctx *context.Context) {
 		Type:        models.UserTypeOrganization,
 		ListOptions: models.ListOptions{PageSize: setting.UI.ExplorePagingNum},
 		Visible:     visibleTypes,
+		HideNoRepos: util.OptionalBoolTrue,
 	}, tplExploreOrganizations)
 }
 
