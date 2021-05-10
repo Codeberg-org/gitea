@@ -21,7 +21,6 @@ type WriteCloserError interface {
 
 // CatFileBatchCheck opens git cat-file --batch-check in the provided repo and returns a stdin pipe, a stdout reader and cancel function
 func CatFileBatchCheck(repoPath string) (WriteCloserError, *bufio.Reader, func()) {
-
 	batchStdinReader, batchStdinWriter := io.Pipe()
 	batchStdoutReader, batchStdoutWriter := io.Pipe()
 	cancel := func() {
@@ -50,8 +49,8 @@ func CatFileBatchCheck(repoPath string) (WriteCloserError, *bufio.Reader, func()
 }
 
 // CatFileBatch opens git cat-file --batch in the provided repo and returns a stdin pipe, a stdout reader and cancel function
-func CatFileBatch(repoPath string) (*io.PipeWriter, *bufio.Reader, func()) {
-	// Next feed the commits in order into cat-file --batch, followed by their trees and sub trees as necessary.
+func CatFileBatch(repoPath string) (WriteCloserError, *bufio.Reader, func()) {
+	// We often want to feed the commits in order into cat-file --batch, followed by their trees and sub trees as necessary.
 	// so let's create a batch stdin and stdout
 	batchStdinReader, batchStdinWriter := io.Pipe()
 	batchStdoutReader, batchStdoutWriter := io.Pipe()
@@ -83,6 +82,7 @@ func CatFileBatch(repoPath string) (*io.PipeWriter, *bufio.Reader, func()) {
 // ReadBatchLine reads the header line from cat-file --batch
 // We expect:
 // <sha> SP <type> SP <size> LF
+// sha is a 40byte not 20byte here
 func ReadBatchLine(rd *bufio.Reader) (sha []byte, typ string, size int64, err error) {
 	typ, err = rd.ReadString('\n')
 	if err != nil {
@@ -111,7 +111,6 @@ func ReadBatchLine(rd *bufio.Reader) (sha []byte, typ string, size int64, err er
 		err = ErrNotExist{ID: string(sha)}
 		return
 	}
-
 	sizeStr := typ[idx+1 : len(typ)-1]
 	typ = typ[:idx]
 
