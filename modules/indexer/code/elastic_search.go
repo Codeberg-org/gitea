@@ -215,6 +215,10 @@ func (b *ElasticSearchIndexer) addUpdate(batchWriter *io.PipeWriter, batchReader
 		return nil, nil
 	}
 
+	if _, err := batchReader.Discard(1); err != nil {
+		return nil, err
+	}
+
 	id := filenameIndexerID(repo.ID, update.Filename)
 
 	return []elastic.BulkableRequest{

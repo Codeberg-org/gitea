@@ -15,6 +15,9 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/djherbis/buffer"
+	"github.com/djherbis/nio/v3"
 )
 
 // GetCommitsInfo gets information of all commits that are corresponding to these entries
@@ -128,7 +131,9 @@ func GetLastCommitForPaths(commit *Commit, treePath string, paths []string) ([]*
 	// We read backwards from the commit to obtain all of the commits
 
 	// We'll do this by using rev-list to provide us with parent commits in order
-	revListReader, revListWriter := io.Pipe()
+	bufRevList := buffer.New(32 * 1024)
+
+	revListReader, revListWriter := nio.Pipe(bufRevList)
 	defer func() {
 		_ = revListWriter.Close()
 		_ = revListReader.Close()
@@ -136,7 +141,11 @@ func GetLastCommitForPaths(commit *Commit, treePath string, paths []string) ([]*
 
 	go func() {
 		stderr := strings.Builder{}
-		err := NewCommand("rev-list", "--format=%T", commit.ID.String()).RunInDirPipeline(commit.repo.Path, revListWriter, &stderr)
+		args := []string{"rev-list", "--format=%T", commit.ID.String()}
+		if treePath != "" {
+			args = append(args, "--", treePath)
+		}
+		err := NewCommand(args...).RunInDirPipeline(commit.repo.Path, revListWriter, &stderr)
 		if err != nil {
 			_ = revListWriter.CloseWithError(ConcatenateError(err, (&stderr).String()))
 		} else {
@@ -162,7 +171,8 @@ func GetLastCommitForPaths(commit *Commit, treePath string, paths []string) ([]*
 
 	allShaBuf := make([]byte, (len(paths)+1)*20)
 	shaBuf := make([]byte, 20)
-	tmpTreeID := make([]byte, 40)
+	tmpTreeID := make([]byte, 41)
+	tmpTreeID[40] = '\n'
 
 	// commits is the returnable commits matching the paths provided
 	commits := make([]string, len(paths))
@@ -171,20 +181,34 @@ func GetLastCommitForPaths(commit *Commit, treePath string, paths []string) ([]*
 
 	// We'll use a scanner for the revList because it's simpler than a bufio.Reader
 	scan := bufio.NewScanner(revListReader)
-revListLoop:
-	for scan.Scan() {
-		// Get the next parent commit ID
-		commitID := scan.Text()
-		if !scan.Scan() {
-			break revListLoop
+	var nextCommitID string
+	var nextRootTreeID string
+	hasNext := scan.Scan()
+	if hasNext {
+		nextCommitID = scan.Text()
+		hasNext = scan.Scan()
+		if hasNext {
+			nextCommitID = nextCommitID[7:]
+			nextRootTreeID = scan.Text()
+			// push the tree to the cat-file --batch process
+			_, err := batchStdinWriter.Write([]byte(nextRootTreeID + "\n"))
+			if err != nil {
+				return nil, err
+			}
 		}
-		commitID = commitID[7:]
-		rootTreeID := scan.Text()
+	}
 
-		// push the tree to the cat-file --batch process
-		_, err := batchStdinWriter.Write([]byte(rootTreeID + "\n"))
-		if err != nil {
-			return nil, err
+	for hasNext {
+		commitID := nextCommitID
+		rootTreeID := nextRootTreeID
+		hasNext = scan.Scan()
+		if hasNext {
+			nextCommitID = scan.Text()
+			hasNext = scan.Scan()
+			if hasNext {
+				nextCommitID = nextCommitID[7:]
+				nextRootTreeID = scan.Text()
+			}
 		}
 
 		currentPath := ""
@@ -214,6 +238,13 @@ revListLoop:
 
 			// Two options: currentPath is the targetTreepath
 			if treePath == currentPath {
+				if hasNext {
+					// push the tree to the cat-file --batch process
+					_, err := batchStdinWriter.Write([]byte(nextRootTreeID + "\n"))
+					if err != nil {
+						return nil, err
+					}
+				}
 				// We are in the right directory
 				// Parse each tree line in turn. (don't care about mode here.)
 				for n < size {
@@ -252,23 +283,64 @@ revListLoop:
 
 			for n < size {
 				// Read each tree entry in turn
-				mode, fname, sha, count, err := ParseTreeLine(batchReader, modeBuf, fnameBuf, shaBuf)
+				isTree, fname, sha, count, err := ParseTreeLineTree(batchReader, modeBuf, fnameBuf, shaBuf)
 				if err != nil {
 					return nil, err
 				}
 				n += int64(count)
 
 				// if we have found the target directory
-				if bytes.Equal(fname, []byte(target)) && bytes.Equal(mode, []byte("40000")) {
+				if isTree && bytes.Equal(fname, []byte(target)) {
 					copy(tmpTreeID, sha)
 					treeID = tmpTreeID
 					break
 				}
 			}
+			if len(treeID) > 0 {
+				// add the target to the current path
+				if idx > 0 {
+					currentPath += "/"
+				}
+				currentPath += target
 
-			if n < size {
+				// if we've now found the current path check its sha id and commit status
+				if treePath == currentPath && paths[0] == "" {
+					if len(ids[0]) == 0 {
+						copy(allShaBuf[0:20], treeID)
+						ids[0] = allShaBuf[0:20]
+						commits[0] = string(commitID)
+					} else if bytes.Equal(ids[0], treeID) {
+						for i := range commits {
+							commits[i] = string(commitID)
+						}
+						if hasNext {
+							// push the tree to the cat-file --batch process
+							_, err := batchStdinWriter.Write([]byte(nextRootTreeID + "\n"))
+							if err != nil {
+								return nil, err
+							}
+						}
+						treeID = nil
+					}
+				}
+				if treeID != nil {
+					treeID = To40ByteSHA(treeID, treeID)
+					_, err = batchStdinWriter.Write(treeID)
+					if err != nil {
+						return nil, err
+					}
+				}
+			} else if hasNext {
+				// push the tree to the cat-file --batch process
+				_, err := batchStdinWriter.Write([]byte(nextRootTreeID + "\n"))
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			if n < size+1 {
 				// Discard any remaining entries in the current tree
-				discard := size - n
+				discard := size - n + 1
 				for discard > math.MaxInt32 {
 					_, err := batchReader.Discard(math.MaxInt32)
 					if err != nil {
@@ -287,31 +359,6 @@ revListLoop:
 				break treeReadingLoop
 			}
 
-			// add the target to the current path
-			if idx > 0 {
-				currentPath += "/"
-			}
-			currentPath += target
-
-			// if we've now found the current path check its sha id and commit status
-			if treePath == currentPath && paths[0] == "" {
-				if len(ids[0]) == 0 {
-					copy(allShaBuf[0:20], treeID)
-					ids[0] = allShaBuf[0:20]
-					commits[0] = string(commitID)
-				} else if bytes.Equal(ids[0], treeID) {
-					commits[0] = string(commitID)
-				}
-			}
-			treeID = To40ByteSHA(treeID, treeID)
-			_, err = batchStdinWriter.Write(treeID)
-			if err != nil {
-				return nil, err
-			}
-			_, err = batchStdinWriter.Write([]byte("\n"))
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
 
