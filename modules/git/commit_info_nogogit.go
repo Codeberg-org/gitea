@@ -383,9 +383,6 @@ revListLoop:
 					return nil, err
 				}
 			}
-			if _, err := batchReader.Discard(1); err != nil {
-				return nil, err
-			}
 
 			// if we haven't found a treeID for the target directory our search is over
 			if len(treeID) == 0 {

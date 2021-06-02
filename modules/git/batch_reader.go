@@ -114,7 +114,7 @@ func ReadBatchLine(rd *bufio.Reader) (sha []byte, typ string, size int64, err er
 	sizeStr := typ[idx+1 : len(typ)-1]
 	typ = typ[:idx]
 
-	size, err = strconv.ParseInt(sizeStr[:len(sizeStr)-1], 10, 64)
+	size, err = strconv.ParseInt(sizeStr, 10, 64)
 	return
 }
 
