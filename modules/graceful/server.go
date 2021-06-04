@@ -29,7 +29,7 @@ var (
 )
 
 // PerWriteWriteTimeout timeout for writes
-const PerWriteWriteTimeout = 5 * time.Second
+const PerWriteWriteTimeout = 60 * time.Second
 
 func init() {
 	DefaultMaxHeaderBytes = 0 // use http.DefaultMaxHeaderBytes - which currently is 1 << 20 (1MB)
