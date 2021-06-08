@@ -21,15 +21,11 @@ import (
 func (repo *Repository) GetLanguageStats(commitID string) (map[string]int64, error) {
 	// We will feed the commit IDs in order into cat-file --batch, followed by blobs as necessary.
 	// so let's create a batch stdin and stdout
-	batchStdinWriter, batchReader, cancel := CatFileBatch(repo.Path)
+	batchStdinWriter, batchReader, cancel := repo.CatFileBatch()
 	defer cancel()
 
 	writeID := func(id string) error {
-		_, err := batchStdinWriter.Write([]byte(id))
-		if err != nil {
-			return err
-		}
-		_, err = batchStdinWriter.Write([]byte{'\n'})
+		_, err := batchStdinWriter.Write([]byte(id + "\n"))
 		return err
 	}
 
@@ -51,6 +47,9 @@ func (repo *Repository) GetLanguageStats(commitID string) (map[string]int64, err
 	commit, err := CommitFromReader(repo, sha, io.LimitReader(batchReader, size))
 	if err != nil {
 		log("Unable to get commit for: %s. Err: %v", commitID, err)
+		return nil, err
+	}
+	if _, err = batchReader.Discard(1); err != nil {
 		return nil, err
 	}
 
@@ -85,10 +84,10 @@ func (repo *Repository) GetLanguageStats(commitID string) (map[string]int64, err
 			}
 
 			sizeToRead := size
-			discard := int64(0)
+			discard := int64(1)
 			if size > fileSizeLimit {
 				sizeToRead = fileSizeLimit
-				discard = size - fileSizeLimit
+				discard = size - fileSizeLimit + 1
 			}
 
 			_, err = contentBuf.ReadFrom(io.LimitReader(batchReader, sizeToRead))

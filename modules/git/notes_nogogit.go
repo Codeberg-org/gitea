@@ -43,11 +43,18 @@ func GetNote(repo *Repository, commitID string, note *Note) error {
 	if err != nil {
 		return err
 	}
-	defer dataRc.Close()
+	closed := false
+	defer func() {
+		if !closed {
+			_ = dataRc.Close()
+		}
+	}()
 	d, err := ioutil.ReadAll(dataRc)
 	if err != nil {
 		return err
 	}
+	_ = dataRc.Close()
+	closed = true
 	note.Message = d
 
 	treePath := ""
@@ -60,7 +67,7 @@ func GetNote(repo *Repository, commitID string, note *Note) error {
 	if err != nil {
 		return err
 	}
-	note.Commit = lastCommits[0]
+	note.Commit = lastCommits[path]
 
 	return nil
 }

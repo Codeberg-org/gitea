@@ -8,7 +8,6 @@ package git
 
 import (
 	"bufio"
-	"io"
 	"path"
 )
 
@@ -36,7 +35,7 @@ func NewLastCommitCache(repoPath string, gitRepo *Repository, ttl func() int64, 
 }
 
 // Get get the last commit information by commit id and entry path
-func (c *LastCommitCache) Get(ref, entryPath string, wr *io.PipeWriter, rd *bufio.Reader) (interface{}, error) {
+func (c *LastCommitCache) Get(ref, entryPath string, wr WriteCloserError, rd *bufio.Reader) (interface{}, error) {
 	v := c.cache.Get(c.getCacheKey(c.repoPath, ref, entryPath))
 	if vs, ok := v.(string); ok {
 		log("LastCommitCache hit level 1: [%s:%s:%s]", ref, entryPath, vs)
@@ -88,9 +87,8 @@ func (c *LastCommitCache) recursiveCache(commit *Commit, tree *Tree, treePath st
 		return err
 	}
 
-	for i, entryCommit := range commits {
-		entry := entryPaths[i]
-		if err := c.Put(commit.ID.String(), path.Join(treePath, entryPaths[i]), entryCommit.ID.String()); err != nil {
+	for entry, entryCommit := range commits {
+		if err := c.Put(commit.ID.String(), path.Join(treePath, entry), entryCommit.ID.String()); err != nil {
 			return err
 		}
 		if entryMap[entry].IsDir() {
