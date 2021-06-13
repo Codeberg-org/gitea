@@ -4,6 +4,7 @@
 		{{if .DisableMirrors}}
 			<input id="mirror" name="mirror" type="checkbox" readonly>
 			<label>{{.i18n.Tr "repo.migrate_options_mirror_disabled"}}</label>
+			<a target=”_blank” href="https://blog.codeberg.org/mirror-repos-easily-created-consuming-resources-forever.html">{{svg "octicon-question"}}</a>
 		{{else}}
 			<input id="mirror" name="mirror" type="checkbox" {{if .mirror}} checked{{end}}>
 			<label>{{.i18n.Tr "repo.migrate_options_mirror_helper" | Safe}}</label>
